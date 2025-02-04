@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <video autoplay muted loop id="backgroundVideo">
+        <source src="{{ url_for('static', filename='background.mp4') }}" type="video/mp4">
+        <!-- You can provide fallback content here if the video doesn't load -->
+        Your browser does not support the video tag.
+    </video>
+    <div class="sidebar">
+        <h3>Options</h3>
+        
+        <!-- Theme & Display Settings -->
+        <h4>Theme & Display</h4>
+        <button onclick="setDarkTheme()">🌙 Dark Mode</button>
+        <button onclick="setLightTheme()">☀️ Light Mode</button>
+        <button onclick="increaseFontSize()">🔠 Increase Font</button>
+        <button onclick="decreaseFontSize()">🔡 Decrease Font</button>
+    
+        <!-- Chat Options -->
+        <h4>Chat Options</h4>
+        <button onclick="clearChat()">🗑 Clear Chat</button>
+        <button onclick="exportChat()">📂 Export Chat</button>
+
+    
+    </div>
+    
+
+    <h1 class="project-name">AI Tutor</h1>
+    <div class="chat-container">
+        <div class="messages" id="messages">
+            {% for chat in messages %}
+                <div class="message user">{{ chat.user }}</div>
+                <div class="message bot">{{ chat.bot }}</div>
+            {% endfor %}
+
+        </div>
+        <div class="input-area">
+            <form action="/chat" method="post" id="chatForm">
+                <input type="text" name="userInput" id="userInput" placeholder="Type your message..." required />
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+    <div class="footer">
+        &copy; 2024 AI Tutor. All rights reserved.
+    </div>
+</body>
+
+<script>
+    document.getElementById("chatForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+
+    const userInput = document.getElementById("userInput").value;
+    if (!userInput.trim()) return; // Prevent empty messages
+
+    const messagesdiv = document.querySelector(".messages");
+
+    const userMessage = document.createElement("div");
+    userMessage.className = "message user";
+    userMessage.textContent = userInput;
+    messagesdiv.appendChild(userMessage);
+
+    setTimeout(() => {
+        messagesdiv.scrollTop = messagesdiv.scrollHeight;
+    }, 100);
+
+
+    fetch("/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: new URLSearchParams({
+            "userInput": userInput
+        })
+    })
+    .then(response => response.text())
+    .then(data => {
+        const botMessage = document.createElement("div");
+        botMessage.className = "message bot";
+
+        data = data.replace(/### (.*?)\n/g, "<h2>$1</h2>") 
+               .replace(/#### (.*?)\n/g, "<h3>$1</h3>")
+               .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+               .replace(/\n/g, "<br>");
+
+        botMessage.innerHTML = data;
+        messagesdiv.appendChild(botMessage);
+        messagesdiv.scrollTop = messagesdiv.scrollHeight; // Auto-scroll
+    })
+    .catch(error => console.error("Error:", error))
+    .finally(() => {
+        document.getElementById("userInput").value = ""; // Clear input field
+    });
+});
+</script>
+
+<script>
+    function setDarkTheme() {
+        document.body.style.backgroundImage
+        document.body.style.color = "#ffffff";
+    }
+
+    function setLightTheme() {
+        document.body.style.backgroundColor = "#ffffff";
+        document.body.style.color = "#000000";
+    }
+
+    function increaseFontSize() {
+        document.body.style.fontSize = "18px";
+    }
+
+    function decreaseFontSize() {
+        document.body.style.fontSize = "14px";
+    }
+
+    function clearChat() {
+        document.getElementById("messages").innerHTML = "";
+    }
+
+    function exportChat() {
+        let chatContent = document.getElementById("messages").innerText;
+        let blob = new Blob([chatContent], { type: "text/plain" });
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "chat_history.txt";
+        a.click();
+    }
+</script>
+
+
+
+</html>
